@@ -16,3 +16,9 @@ node Server-Tools.js 或 node Server-Tools.js help
 node Server-Tools.js <命令> <参数>
 
 执行命令
+
+### 部分可用命令
+
+\[帮助\] help
+
+\[搭建静态网站\] page <端口> <主页> <错误页> <打印日志 (ON/OFF)> <输出日志路径 (可留空)>
