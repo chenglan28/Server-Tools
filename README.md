@@ -34,4 +34,5 @@ node Server-Tools.js <命令> <参数>
 
 #### 特殊的重定向
 .>Path 重定向主页
+
 404>Path 重定向404错误页
