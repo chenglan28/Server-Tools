@@ -388,7 +388,7 @@ log = (text) => {
 fs = require("fs"),
 http = require("http"),
 config = {
-    "verison":[1,1,0]
+    "verison":[1,1,1]
 }
 
 log(`欢迎使用Server Tools [版本:${color(config.verison.join("."),"cyan")}]`);
@@ -396,35 +396,47 @@ log(`橙蓝 ©2023~2023`);
 if(!process.argv[2])process.argv[2] = "help";
 if(process.argv[2] == "help"){
     log(`${color("[帮助]","green")} help`);
-    log(`${color("[搭建静态网站]","green")} page <端口> <主页> <错误页> <打印日志 (ON/OFF)> <输出日志路径 (可留空)>`);
+    log(`${color("[搭建静态网站]","green")} page <端口> <重定向表> <打印日志 (ON/OFF)> <输出日志路径 (可留空)>`);
 }
 else if(process.argv[2] == "page"){
+    var rePage = {};
+    process.argv[4].split("'").forEach(item=>{
+        item = item.split(">");
+        rePage[item[0]] = item[1].replace(/%20/g," ");
+    })
+    console.log(rePage)
     http.createServer((req,res)=>{
-        if(process.argv[6] == "ON")log(`接收请求 ${color(req.url,"green")}`);
-        if(process.argv[7])fs.writeFileSync(process.argv[7].replace(/%20/g," "),`${timeS() + platform()}接收请求 ${req.url}\n`,{flag:"a+"});
-        if(req.url == "/"){
-            res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
-            res.end(fs.readFileSync(process.argv[4].replace(/%20/g," ")));
-        }
-        else {
-            req.url = decodeURI("." + req.url);
-            if(req.url[req.url.length-1] == "/")req.url = req.url.substr(0,req.url.length-1);
-            if(fs.existsSync(req.url) && fs.statSync(req.url).isFile()){
-                var _content_type = content_type(req.url)
+        if(process.argv[5] == "ON")log(`接收请求 ${color(req.url,"green")}`);
+        if(process.argv[6])fs.writeFileSync(process.argv[6].replace(/%20/g," "),`${timeS() + platform()}接收请求 ${req.url}\n`,{flag:"a+"});
+        req.url = decodeURI("." + req.url);
+        if(req.url[req.url.length-1] == "/")req.url = req.url.substr(0,req.url.length-1);
+        Object.keys(rePage).forEach(item=>{
+            if(req.url == item)req.url = rePage[item]
+        })
+        if(fs.existsSync(req.url) && fs.statSync(req.url).isFile()){
+            var _content_type = content_type(req.url)
+            if(_content_type == "application/octet-stream"){
                 res.writeHead(200, {
-                    'Content-Type': _content_type,
-                    'Content-Disposition':(_content_type == "application/octet-stream")?'attachment;filename=' + encodeURIComponent(req.url.split("/").pop()):undefined,
-                    'Content-Length':(_content_type == "application/octet-stream")?fs.statSync(req.url).size:undefined
+                    'Content-Type': "application/octet-stream",
+                    'Content-Disposition':'attachment;filename=' + encodeURIComponent(req.url.split("/").pop()),
+                    'Content-Length':fs.statSync(req.url).size
                 });
-                res.end(fs.readFileSync(req.url));
             }
             else {
-                res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
-                res.end(fs.readFileSync(process.argv[5].replace(/%20/g," ")));
+                res.writeHead(200, {
+                    'Content-Type': _content_type,
+                });
             }
+            res.end(fs.readFileSync(req.url));
+        }
+        else {
+            res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+            if(rePage["404"])res.end(fs.readFileSync(rePage["404"]));
+            else res.end("404")
         }
     }).listen(Number(process.argv[3]),()=>{
-        if(process.argv[6] == "ON")log(`服务器于端口 ${process.argv[3]} 开放`);
-        if(process.argv[7])fs.writeFileSync(process.argv[7].replace(/%20/g," "),`${timeS() + platform()}服务器于端口 ${process.argv[3]} 开放\n`,{flag:"a+"});
+        if(process.argv[5] == "ON")log(`服务器于端口 ${process.argv[3]} 开放`);
+        if(process.argv[6])fs.writeFileSync(process.argv[6].replace(/%20/g," "),`${timeS() + platform()}服务器于端口 ${process.argv[3]} 开放\n`,{flag:"a+"});
     });
 }
+else log(color("不是一个有效的指令","red"));
